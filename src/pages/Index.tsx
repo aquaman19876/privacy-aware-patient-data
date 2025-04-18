@@ -1,10 +1,11 @@
-
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PatientRecord, DeidentifiedRecord } from '@/types/patient';
 import { deidentifyRecord } from '@/utils/deidentification';
 import PatientForm from '@/components/PatientForm';
 import RecordsTable from '@/components/RecordsTable';
+import BulkAddPatients from '@/components/BulkAddPatients';
+import ReviewRecords from '@/components/ReviewRecords';
 
 const demoData: PatientRecord[] = [
   {
@@ -47,13 +48,22 @@ const demoData: PatientRecord[] = [
 
 const Index = () => {
   const [originalRecords, setOriginalRecords] = React.useState<PatientRecord[]>(demoData);
-  const [deidentifiedRecords, setDeidentifiedRecords] = React.useState<DeidentifiedRecord[]>(
-    demoData.map(record => deidentifyRecord(record))
-  );
+  const [deidentifiedRecords, setDeidentifiedRecords] = React.useState<DeidentifiedRecord[]>([]);
+  const [showDeidentified, setShowDeidentified] = React.useState(false);
 
   const handleAddRecord = (record: PatientRecord) => {
     setOriginalRecords(prev => [...prev, record]);
-    setDeidentifiedRecords(prev => [...prev, deidentifyRecord(record)]);
+  };
+
+  const handleAddBulkRecords = (records: PatientRecord[]) => {
+    setOriginalRecords(prev => [...prev, ...records]);
+  };
+
+  const handleDeidentify = (records: PatientRecord[]) => {
+    const deidentified = records.map(record => deidentifyRecord(record));
+    setDeidentifiedRecords(deidentified);
+    setShowDeidentified(true);
+    return deidentified;
   };
 
   return (
@@ -63,29 +73,37 @@ const Index = () => {
           Patient Data De-identification System
         </h1>
         
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4 text-gray-800">Add New Patient Record</h2>
-          <PatientForm onSubmit={handleAddRecord} />
-        </div>
+        {!showDeidentified ? (
+          <Tabs defaultValue="single" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-4">
+              <TabsTrigger value="single">Add Single Patient</TabsTrigger>
+              <TabsTrigger value="bulk">Bulk Add Patients</TabsTrigger>
+            </TabsList>
+            <TabsContent value="single">
+              <div className="bg-white p-6 rounded-lg shadow">
+                <h2 className="text-xl font-semibold mb-4">Add New Patient Record</h2>
+                <PatientForm onSubmit={handleAddRecord} />
+              </div>
+            </TabsContent>
+            <TabsContent value="bulk">
+              <BulkAddPatients onSubmit={handleAddBulkRecords} />
+            </TabsContent>
 
-        <Tabs defaultValue="original" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-4">
-            <TabsTrigger value="original">Original Records</TabsTrigger>
-            <TabsTrigger value="deidentified">De-identified Records</TabsTrigger>
-          </TabsList>
-          <TabsContent value="original">
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h2 className="text-xl font-semibold mb-4">Original Patient Records</h2>
-              <RecordsTable records={originalRecords} type="original" />
-            </div>
-          </TabsContent>
-          <TabsContent value="deidentified">
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h2 className="text-xl font-semibold mb-4">De-identified Patient Records</h2>
-              <RecordsTable records={deidentifiedRecords} type="deidentified" />
-            </div>
-          </TabsContent>
-        </Tabs>
+            {originalRecords.length > 0 && (
+              <div className="mt-8">
+                <ReviewRecords 
+                  records={originalRecords} 
+                  onDeidentify={handleDeidentify}
+                />
+              </div>
+            )}
+          </Tabs>
+        ) : (
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h2 className="text-xl font-semibold mb-4">De-identified Patient Records</h2>
+            <RecordsTable records={deidentifiedRecords} type="deidentified" />
+          </div>
+        )}
       </div>
     </div>
   );
