@@ -1,11 +1,12 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from "./ui/button";
 import { Card, CardHeader, CardContent } from "./ui/card";
 import { PatientRecord, DeidentifiedRecord } from '@/types/patient';
-import { Shield, Loader2, Info, Plus, ArrowLeft, Edit } from "lucide-react";
+import { Shield, Loader2, Info, Plus, ArrowLeft, Edit, Check, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from 'react-router-dom';
+import { Input } from "./ui/input";
 
 interface ReviewRecordsProps {
   records: PatientRecord[];
@@ -15,8 +16,31 @@ interface ReviewRecordsProps {
 const ReviewRecords: React.FC<ReviewRecordsProps> = ({ records, onDeidentify }) => {
   const [isDeidentifying, setIsDeidentifying] = React.useState(false);
   const [showDetails, setShowDetails] = React.useState<number | null>(null);
+  const [editingIndex, setEditingIndex] = React.useState<number | null>(null);
+  const [editedRecord, setEditedRecord] = React.useState<PatientRecord | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  const handleEdit = (index: number) => {
+    setEditingIndex(index);
+    setEditedRecord({ ...records[index] });
+  };
+
+  const handleSave = (index: number) => {
+    if (!editedRecord) return;
+    records[index] = editedRecord;
+    setEditingIndex(null);
+    setEditedRecord(null);
+    toast({
+      title: "Success",
+      description: "Patient record updated successfully.",
+    });
+  };
+
+  const handleCancel = () => {
+    setEditingIndex(null);
+    setEditedRecord(null);
+  };
 
   const handleDeidentify = async () => {
     setIsDeidentifying(true);
@@ -88,32 +112,68 @@ const ReviewRecords: React.FC<ReviewRecordsProps> = ({ records, onDeidentify }) 
             className={`cursor-pointer hover:shadow-lg transition-all duration-200 ${
               showDetails === index ? 'ring-2 ring-purple-500' : ''
             }`}
-            onClick={() => setShowDetails(showDetails === index ? null : index)}
+            onClick={() => editingIndex !== index && setShowDetails(showDetails === index ? null : index)}
           >
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-lg font-semibold text-purple-900">{record.fullName}</h3>
-                  <p className="text-sm text-gray-600">Hospital ID: {record.hospitalId}</p>
+                  {editingIndex === index ? (
+                    <Input
+                      value={editedRecord?.fullName || ''}
+                      onChange={(e) => setEditedRecord(prev => prev ? { ...prev, fullName: e.target.value } : null)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="mb-2"
+                    />
+                  ) : (
+                    <>
+                      <h3 className="text-lg font-semibold text-purple-900">{record.fullName}</h3>
+                      <p className="text-sm text-gray-600">Hospital ID: {record.hospitalId}</p>
+                    </>
+                  )}
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-gray-500 hover:text-purple-600"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    // Add edit functionality here
-                    toast({
-                      title: "Edit mode",
-                      description: "Editing functionality coming soon.",
-                    });
-                  }}
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
+                <div className="flex gap-2">
+                  {editingIndex === index ? (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-green-600 hover:text-green-700"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSave(index);
+                        }}
+                      >
+                        <Check className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-red-600 hover:text-red-700"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCancel();
+                        }}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-purple-600 hover:text-purple-700"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEdit(index);
+                      }}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
             </CardHeader>
-            {showDetails === index && (
+            {showDetails === index && !editingIndex && (
               <CardContent>
                 <div className="space-y-2 text-sm">
                   <p><span className="font-medium text-gray-700">Address:</span> <span className="text-gray-600">{record.address}</span></p>
@@ -122,6 +182,36 @@ const ReviewRecords: React.FC<ReviewRecordsProps> = ({ records, onDeidentify }) 
                   <p><span className="font-medium text-gray-700">Admission:</span> <span className="text-gray-600">{record.admissionDate}</span></p>
                   <p><span className="font-medium text-gray-700">Discharge:</span> <span className="text-gray-600">{record.dischargeDate}</span></p>
                   <p><span className="font-medium text-gray-700">Diagnosis:</span> <span className="text-gray-600">{record.diagnosis}</span></p>
+                </div>
+              </CardContent>
+            )}
+            {editingIndex === index && (
+              <CardContent>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Address</label>
+                    <Input
+                      value={editedRecord?.address || ''}
+                      onChange={(e) => setEditedRecord(prev => prev ? { ...prev, address: e.target.value } : null)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Phone</label>
+                    <Input
+                      value={editedRecord?.phoneNumber || ''}
+                      onChange={(e) => setEditedRecord(prev => prev ? { ...prev, phoneNumber: e.target.value } : null)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Email</label>
+                    <Input
+                      value={editedRecord?.emailId || ''}
+                      onChange={(e) => setEditedRecord(prev => prev ? { ...prev, emailId: e.target.value } : null)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
                 </div>
               </CardContent>
             )}

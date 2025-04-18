@@ -26,11 +26,11 @@ const Landing = () => {
           
           <Button
             onClick={() => navigate('/try-out')}
-            className="w-full md:w-[35%] h-48 text-xl flex flex-col gap-4 bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 transform transition-all duration-200 hover:scale-105 shadow-lg"
+            className="w-full md:w-[35%] h-48 text-xl flex flex-col gap-4 bg-gradient-to-br from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 transform transition-all duration-200 hover:scale-105 shadow-lg"
           >
             <Rocket className="h-12 w-12" />
             Try Out Mode
-            <span className="text-sm text-blue-100">Start fresh with your own records</span>
+            <span className="text-sm text-purple-100">Start fresh with your own records</span>
           </Button>
         </div>
 
